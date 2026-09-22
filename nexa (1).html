@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>NEXA — Hybrid AI Router</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#EEF1F4; --surface:#FFFFFF; --surface-2:#F5F7F9;
+  --ink:#0E1F2B; --muted:#5A7386; --line:#D6DDE4; --line-soft:#E6EBEF;
+  --local:#0B7F68; --local-soft:#DDF0EB;
+  --cloud:#4453C9; --cloud-soft:#E2E5FA;
+  --hybrid:#9A6207; --hybrid-soft:#F7EBD6;
+  --danger:#B23A3A;
+  --shadow:0 1px 0 rgba(14,31,43,.04), 0 8px 24px -16px rgba(14,31,43,.35);
+  --rail:76px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0B1620; --surface:#122130; --surface-2:#0E1B26;
+    --ink:#E6EEF4; --muted:#8AA3B5; --line:#22394B; --line-soft:#1A2E3E;
+    --local:#3CCBA6; --local-soft:#0E2E2A;
+    --cloud:#8C9AFF; --cloud-soft:#1B2450;
+    --hybrid:#E4A748; --hybrid-soft:#33260F;
+    --danger:#F0797A;
+    --shadow:0 1px 0 rgba(0,0,0,.2), 0 10px 30px -18px rgba(0,0,0,.9);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0B1620; --surface:#122130; --surface-2:#0E1B26;
+  --ink:#E6EEF4; --muted:#8AA3B5; --line:#22394B; --line-soft:#1A2E3E;
+  --local:#3CCBA6; --local-soft:#0E2E2A;
+  --cloud:#8C9AFF; --cloud-soft:#1B2450;
+  --hybrid:#E4A748; --hybrid-soft:#33260F;
+  --danger:#F0797A;
+  --shadow:0 1px 0 rgba(0,0,0,.2), 0 10px 30px -18px rgba(0,0,0,.9);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0;height:100%;background:var(--paper);color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{font-family:"Bricolage Grotesque","IBM Plex Sans",sans-serif;margin:0;line-height:1.05;letter-spacing:-.02em;font-weight:700}
+h1{font-size:clamp(30px,5.4vw,52px);font-weight:800;letter-spacing:-.035em}
+h2{font-size:clamp(19px,2.4vw,24px)}
+h3{font-size:15px;letter-spacing:-.01em}
+p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+::selection{background:var(--cloud-soft)}
+:focus-visible{outline:2px solid var(--cloud);outline-offset:2px;border-radius:4px}
+
+/* ---------- shell ---------- */
+.app{display:flex;min-height:100%;}
+.rail{
+  width:var(--rail);flex:0 0 var(--rail);border-right:1px solid var(--line);
+  background:var(--surface);position:sticky;top:0;height:100vh;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:14px 0 calc(14px + env(safe-area-inset-bottom,0px));z-index:20;
+}
+.mark{width:34px;height:34px;margin-bottom:14px;flex:none}
+.rail button{
+  width:58px;padding:9px 2px 7px;border:0;background:none;border-radius:10px;
+  display:flex;flex-direction:column;align-items:center;gap:5px;
+  font-size:10.5px;letter-spacing:.01em;color:var(--muted);
+}
+.rail button svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.rail button:hover{color:var(--ink);background:var(--surface-2)}
+.rail button[aria-current="true"]{color:var(--ink);background:var(--surface-2);box-shadow:inset 2px 0 0 var(--cloud)}
+.rail .spacer{flex:1}
+main{flex:1;min-width:0}
+.wrap{max-width:1080px;margin:0 auto;padding:26px 22px 90px}
+
+/* ---------- status strip ---------- */
+.strip{
+  position:sticky;top:0;z-index:15;background:color-mix(in srgb,var(--paper) 88%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line-soft);
+  padding-top:env(safe-area-inset-top,0px);
+}
+.strip-in{max-width:1080px;margin:0 auto;padding:9px 22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pill{
+  display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);
+  background:var(--surface);border-radius:999px;padding:4px 11px;font-size:12.5px;
+}
+.pill.act{cursor:pointer}
+.pill.act:hover{border-color:var(--muted)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--local);flex:none}
+.dot.off{background:var(--danger)}
+.strip .grow{flex:1}
+
+/* ---------- hero ---------- */
+.hero{padding:16px 0 4px}
+.hero .lede{max-width:44ch;color:var(--muted);margin-top:14px;font-size:16px}
+.track{
+  margin:26px 0 8px;border:1px solid var(--line);background:var(--surface);
+  border-radius:14px;padding:16px;box-shadow:var(--shadow);
+}
+.lanes{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.lane{
+  border:1px solid var(--line-soft);border-radius:10px;padding:11px 12px;background:var(--surface-2);
+  transition:border-color .25s, background .25s, transform .25s;
+}
+.lane .nm{font-weight:600;font-size:13px;display:flex;align-items:center;gap:7px}
+.lane .sub{font-size:11.5px;color:var(--muted);margin-top:3px}
+.lane .bar{height:3px;border-radius:2px;background:var(--line);margin-top:9px;overflow:hidden}
+.lane .bar i{display:block;height:100%;width:0;background:currentColor;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.lane[data-on="1"]{background:var(--surface);transform:translateY(-2px)}
+.lane.local[data-on="1"]{border-color:var(--local);color:var(--local)}
+.lane.hybrid[data-on="1"]{border-color:var(--hybrid);color:var(--hybrid)}
+.lane.cloud[data-on="1"]{border-color:var(--cloud);color:var(--cloud)}
+.lane .nm b{color:var(--ink)}
+
+/* ---------- composer ---------- */
+.composer{display:flex;gap:9px;margin-top:14px;align-items:flex-end}
+.composer textarea{
+  flex:1;resize:none;min-height:46px;max-height:150px;padding:12px 14px;
+  border-radius:11px;border:1px solid var(--line);background:var(--surface);color:var(--ink);
+  font:inherit;line-height:1.45;
+}
+.composer textarea::placeholder{color:var(--muted)}
+.composer textarea:focus{outline:none;border-color:var(--cloud)}
+.send{
+  border:0;background:var(--ink);color:var(--paper);border-radius:11px;
+  height:46px;padding:0 17px;font-weight:600;display:flex;align-items:center;gap:8px;
+}
+.send:hover{opacity:.88}
+.send:disabled{opacity:.45;cursor:not-allowed}
+.chips{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+.chip{
+  border:1px solid var(--line);background:var(--surface);border-radius:999px;
+  padding:5px 11px;font-size:12.5px;color:var(--muted);
+}
+.chip:hover{color:var(--ink);border-color:var(--muted)}
+.chip i{font-style:normal;margin-right:6px;font-size:10px}
+
+/* ---------- messages ---------- */
+.thread{display:flex;flex-direction:column;gap:14px;margin-top:22px}
+.msg.user{align-self:flex-end;max-width:min(560px,85%);background:var(--ink);color:var(--paper);
+  padding:10px 14px;border-radius:14px 14px 3px 14px}
+.card{
+  border:1px solid var(--line);background:var(--surface);border-radius:13px;
+  box-shadow:var(--shadow);overflow:hidden;
+}
+.card.local{border-left:3px solid var(--local)}
+.card.cloud{border-left:3px solid var(--cloud)}
+.card.hybrid{border-left:3px solid var(--hybrid)}
+.card-hd{display:flex;align-items:center;gap:9px;padding:11px 14px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.tag{font-size:11.5px;font-weight:600;padding:2.5px 9px;border-radius:6px;letter-spacing:.01em}
+.tag.local{background:var(--local-soft);color:var(--local)}
+.tag.cloud{background:var(--cloud-soft);color:var(--cloud)}
+.tag.hybrid{background:var(--hybrid-soft);color:var(--hybrid)}
+.card-hd .meta{font-size:12px;color:var(--muted);margin-left:auto}
+.card-bd{padding:13px 15px}
+.steps{list-style:none;margin:0 0 11px;padding:0;display:flex;flex-direction:column;gap:5px}
+.steps li{display:flex;gap:9px;font-size:12.8px;color:var(--muted);align-items:baseline}
+.steps li .tick{color:var(--local);font-size:11px}
+.steps li.pend{opacity:.45}
+.why{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px}
+.why summary{font-size:12.5px;color:var(--muted);cursor:pointer;list-style:none}
+.why summary::-webkit-details-marker{display:none}
+.why summary:hover{color:var(--ink)}
+.why ul{margin:9px 0 0;padding-left:17px;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.factors{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.fx{font-size:11.5px;color:var(--muted);border:1px solid var(--line-soft);border-radius:6px;padding:2px 8px}
+.fx b{color:var(--ink);font-weight:600}
+
+/* ---------- generic layout bits ---------- */
+.view{display:none}
+.view.on{display:block}
+.head{margin-bottom:18px}
+.head p{color:var(--muted);margin-top:8px;max-width:58ch}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.panel{border:1px solid var(--line);background:var(--surface);border-radius:13px;padding:16px;box-shadow:var(--shadow)}
+.panel h3{margin-bottom:4px}
+.panel .hint{font-size:12.5px;color:var(--muted)}
+.stat{font-family:"Bricolage Grotesque",sans-serif;font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+.rows{display:flex;flex-direction:column}
+.row{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line-soft);font-size:13.5px}
+.row:last-child{border-bottom:0}
+.row .t{font-size:12px;color:var(--muted);flex:none;width:58px}
+.row .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.empty{color:var(--muted);font-size:13.5px;padding:14px 0}
+
+/* toggles */
+.tog{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--line-soft)}
+.tog:last-child{border-bottom:0}
+.tog .lb{font-size:14px;font-weight:500}
+.tog .ds{font-size:12.5px;color:var(--muted);margin-top:2px;max-width:46ch}
+.sw{width:42px;height:24px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2);position:relative;flex:none;transition:background .2s,border-color .2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
+.sw[aria-pressed="true"]{background:var(--local-soft);border-color:var(--local)}
+.sw[aria-pressed="true"]::after{transform:translateX(18px);background:var(--local)}
+
+/* router viz */
+.viz{width:100%;height:auto;display:block}
+.viz text{font-family:"IBM Plex Mono",monospace;font-size:10px;fill:var(--muted)}
+.viz .nlabel{font-family:"IBM Plex Sans",sans-serif;font-size:11.5px;font-weight:600;fill:var(--ink)}
+.viz .edge{stroke:var(--line);stroke-width:2;fill:none}
+.viz .edge.live{stroke-width:2.5;stroke-dasharray:7 6;animation:flow 1s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-26}}
+.viz .node{fill:var(--surface);stroke:var(--line);stroke-width:1.5}
+.viz .node.on{stroke-width:2}
+.gauge{display:flex;align-items:baseline;gap:8px;margin-top:6px}
+.gauge .v{font-family:"Bricolage Grotesque",sans-serif;font-size:30px;font-weight:700;letter-spacing:-.03em}
+.meter{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:10px}
+.meter i{display:block;height:100%;background:var(--cloud);transition:width .8s cubic-bezier(.3,.9,.3,1)}
+.spark{width:100%;height:46px;display:block;margin-top:10px}
+
+/* demo */
+.scn{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.scn button{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:8px 13px;font-size:13px}
+.scn button[aria-pressed="true"]{border-color:var(--ink);background:var(--surface-2);font-weight:600}
+.banner{border:1px solid var(--line);border-radius:11px;padding:13px 15px;background:var(--surface-2);font-size:13.5px;color:var(--muted)}
+
+/* mobile tabs */
+.tabs{display:none}
+@media (max-width:860px){
+  .rail{display:none}
+  .wrap{padding:18px 15px 96px}
+  .strip-in{padding:8px 15px}
+  .lanes{grid-template-columns:1fr}
+  .tabs{
+    display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;
+    background:var(--surface);border-top:1px solid var(--line);
+    padding:5px 2px calc(5px + env(safe-area-inset-bottom,0px));
+  }
+  .tabs button{flex:1;border:0;background:none;padding:7px 0 4px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--muted);border-radius:9px}
+  .tabs button svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .tabs button[aria-current="true"]{color:var(--ink)}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms!important;transition-duration:.001ms!important}
+}
+.scroll-x{overflow-x:auto}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="rail" aria-label="Sections">
+    <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="16" cy="16" r="14" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+      <path d="M6 22 L16 10 L26 22" fill="none" stroke="var(--cloud)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="16" cy="10" r="2.6" fill="var(--local)"/>
+    </svg>
+    <div id="railNav"></div>
+    <div class="spacer"></div>
+  </nav>
+
+  <main>
+    <div class="strip">
+      <div class="strip-in">
+        <button class="pill act" id="netBtn" title="Simulate losing connectivity">
+          <span class="dot" id="netDot"></span><span id="netTxt">Online</span>
+        </button>
+        <span class="pill"><span class="dot" style="background:var(--cloud)"></span>NPU <span class="mono" id="npuPill">32%</span></span>
+        <span class="pill mono" id="localPill">0% on-device</span>
+        <span class="pill" id="enginePill"><span class="dot"></span>Connecting…</span>
+        <span class="grow"></span>
+        <button class="pill act" id="themeBtn">Light mode</button>
+      </div>
+    </div>
+
+    <div class="wrap">
+
+      <!-- CONSOLE -->
+      <section class="view on" id="v-console">
+        <div class="hero" id="hero">
+          <h1>Your assistant decides<br>where each task runs.</h1>
+          <p class="lede">NEXA reads a request for privacy sensitivity and complexity, then routes it to the phone's NPU, to a cloud model, or splits it between both. Type something and watch the decision happen.</p>
+        </div>
+
+        <div class="track">
+          <div class="lanes">
+            <div class="lane local" id="lane-local" data-on="0">
+              <div class="nm"><b>On-device NPU</b></div>
+              <div class="sub">Private, instant, works offline</div>
+              <div class="bar"><i></i></div>
+            </div>
+            <div class="lane hybrid" id="lane-hybrid" data-on="0">
+              <div class="nm"><b>Hybrid pipeline</b></div>
+              <div class="sub">Filter locally, reason in cloud</div>
+              <div class="bar"><i></i></div>
+            </div>
+            <div class="lane cloud" id="lane-cloud" data-on="0">
+              <div class="nm"><b>Cloud model</b></div>
+              <div class="sub">Heavy reasoning, wide knowledge</div>
+              <div class="bar"><i></i></div>
+            </div>
+          </div>
+
+          <div class="composer">
+            <textarea id="input" rows="1" placeholder="Ask for anything — &quot;summarise my private meeting notes&quot;"></textarea>
+            <button class="send" id="sendBtn">Route it</button>
+          </div>
+          <div class="chips" id="chips"></div>
+        </div>
+
+        <div class="thread" id="thread"></div>
+      </section>
+
+      <!-- ROUTER -->
+      <section class="view" id="v-router">
+        <div class="head">
+          <h2>Routing inspector</h2>
+          <p>The same decision the console makes, shown one factor at a time. Edit the request and the path redraws before anything runs.</p>
+        </div>
+        <div class="panel">
+          <textarea id="rInput" rows="2" style="width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 13px;background:var(--surface-2);color:var(--ink);font:inherit;resize:vertical">Compare my confidential salary review against market data for this role</textarea>
+          <div class="factors" id="rFactors" style="margin-top:12px"></div>
+          <div class="scroll-x">
+            <svg class="viz" id="viz" viewBox="0 0 640 210" role="img" aria-label="Routing path diagram" style="min-width:560px"></svg>
+          </div>
+          <div id="rWhy"></div>
+        </div>
+      </section>
+
+      <!-- DEMO -->
+      <section class="view" id="v-demo">
+        <div class="head">
+          <h2>Guided walkthrough</h2>
+          <p>Three requests that each take a different path. Play one to watch the stages fire in order.</p>
+        </div>
+        <div class="scn" id="scnBtns"></div>
+        <div class="panel" id="demoPanel"></div>
+      </section>
+
+      <!-- PRIVACY -->
+      <section class="view" id="v-privacy">
+        <div class="head">
+          <h2>Privacy centre</h2>
+          <p>A running record of what stayed on your phone and what left it, written at the moment each decision was made.</p>
+        </div>
+        <div class="grid g3" style="margin-bottom:14px">
+          <div class="panel"><div class="hint">Handled on-device</div><div class="stat" id="pLocal">0</div></div>
+          <div class="panel"><div class="hint">Sensitive items redacted</div><div class="stat" id="pRedact">0</div></div>
+          <div class="panel"><div class="hint">Left the device</div><div class="stat" id="pCloud">0</div></div>
+        </div>
+        <div class="panel">
+          <h3>Event log</h3>
+          <div class="rows" id="pLog"><div class="empty">Nothing routed yet. Send a request from the console and it will appear here.</div></div>
+        </div>
+      </section>
+
+      <!-- DEVICE -->
+      <section class="view" id="v-device">
+        <div class="head">
+          <h2>Device monitor</h2>
+          <p>Telemetry is simulated in the browser. In the Android build these read from the native bridge instead.</p>
+        </div>
+        <div class="grid g3" style="margin-bottom:14px">
+          <div class="panel"><div class="hint">NPU utilisation</div><div class="gauge"><span class="v mono" id="mNpu">—</span></div><div class="meter"><i id="bNpu" style="background:var(--local)"></i></div></div>
+          <div class="panel"><div class="hint">CPU</div><div class="gauge"><span class="v mono" id="mCpu">—</span></div><div class="meter"><i id="bCpu"></i></div></div>
+          <div class="panel"><div class="hint">Memory</div><div class="gauge"><span class="v mono" id="mMem">—</span></div><div class="meter"><i id="bMem" style="background:var(--hybrid)"></i></div></div>
+        </div>
+        <div class="panel">
+          <h3>On-device inference latency</h3>
+          <div class="hint">Last 40 samples, milliseconds</div>
+          <svg class="spark" id="spark" viewBox="0 0 400 60" preserveAspectRatio="none" aria-hidden="true"></svg>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="view" id="v-settings">
+        <div class="head">
+          <h2>Settings</h2>
+          <p>These change the routing rules immediately — send a request afterwards to see the difference.</p>
+        </div>
+        <div class="panel" id="togs"></div>
+        <div class="panel" style="margin-top:14px">
+          <h3>What's real here</h3>
+          <p class="hint" style="margin-top:8px">Real: the routing decision, the factor analysis, the redaction pass (it runs in this page, before anything is sent), the placeholder substitution on the way back, the settings, the privacy ledger, and the model answers themselves — every path calls a live Claude model on your own account, with a different tier per route.</p>
+          <p class="hint" style="margin-top:10px">Not real: the NPU, CPU and memory readings, which a browser cannot see. The on-device path also runs through the network here, using the fastest tier under a tight prompt to stand in for a compressed local model. On the Android build that one call becomes an ONNX Runtime session and nothing changes above it.</p>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+<nav class="tabs" id="tabs" aria-label="Sections"></nav>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- icons ---------------- */
+var ICON = {
+  console:'<path d="M4 6h16v12H4z"/><path d="M8 10l2.5 2L8 14"/><path d="M13 14h3"/>',
+  router:'<circle cx="12" cy="12" r="2.5"/><path d="M12 4v5M12 15v5M4 12h5M15 12h5"/>',
+  demo:'<circle cx="12" cy="12" r="8"/><path d="M10.5 9l5 3-5 3z"/>',
+  privacy:'<path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/><path d="M9.5 12l1.8 1.8L15 10"/>',
+  device:'<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M10 6.5h4"/><path d="M10.5 17h3"/>',
+  settings:'<circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/>'
+};
+var NAV = [
+  {id:'console', label:'Console'},
+  {id:'router', label:'Router'},
+  {id:'demo', label:'Demo'},
+  {id:'privacy', label:'Privacy'},
+  {id:'device', label:'Device'},
+  {id:'settings', label:'Settings'}
+];
+function $(s){return document.querySelector(s);}
+function el(t,c,x){var e=document.createElement(t); if(c)e.className=c; if(x!=null)e.textContent=x; return e;}
+function esc(s){return String(s).replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];});}
+function rnd(a,b){return Math.round(a+Math.random()*(b-a));}
+function clock(){var d=new Date();return d.toTimeString().slice(0,5);}
+
+/* ---------------- state ---------------- */
+var S = {
+  online:true,
+  settings:{preferOnDevice:true, allowCloud:true, confirmCloud:false, offlineOnly:false},
+  activity:[],
+  counts:{local:0, cloud:0, redacted:0},
+  metrics:{npu:34, cpu:22, mem:47},
+  latencies:[],
+  busy:false
+};
+try{
+  var saved = localStorage.getItem('nexa.settings');
+  if(saved) S.settings = Object.assign(S.settings, JSON.parse(saved));
+  var th = localStorage.getItem('nexa.theme');
+  if(th) document.documentElement.setAttribute('data-theme', th);
+}catch(e){}
+function persist(){ try{ localStorage.setItem('nexa.settings', JSON.stringify(S.settings)); }catch(e){} }
+
+/* ---------------- routing engine ---------------- */
+var PRIVATE_HINTS = ['private','personal','meeting notes','my documents','my files','passport','medical','salary','contract','confidential','my notes','diary','journal','password','bank','payslip','health','id card','client'];
+var COMPLEX_HINTS = ['research','analyze','analyse','compare','latest','trends','deep','multiple sources','report','synthesize','synthesise','across','investigate','explain why','market','strategy','pros and cons'];
+var SIMPLE_HINTS = ['organize','organise','transcribe','remind','remember','note','rename','sort','list','quick','jot','set a','alarm','timer'];
+
+function matched(text, arr){
+  var t = text.toLowerCase(), hits = [];
+  for(var i=0;i<arr.length;i++) if(t.indexOf(arr[i])>-1) hits.push(arr[i]);
+  return hits;
+}
+function analyzePrivacy(t){
+  var h = matched(t, PRIVATE_HINTS);
+  return {level: h.length>=2 ? 'high' : h.length===1 ? 'medium' : 'low', hits:h};
+}
+function estimateComplexity(t){
+  var c = matched(t, COMPLEX_HINTS), s = matched(t, SIMPLE_HINTS);
+  var w = t.trim().split(/\s+/).filter(Boolean).length;
+  var lvl;
+  if(c.length>=1 && w>5) lvl='high';
+  else if(s.length>=1 && c.length===0) lvl='low';
+  else if(w>14) lvl='medium';
+  else lvl = c.length>0 ? 'medium' : 'low';
+  return {level:lvl, hits:c, words:w};
+}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1);}
+
+function routeTask(text){
+  var p = analyzePrivacy(text), c = estimateComplexity(text);
+  var st = S.settings, reasons = [], target;
+
+  if(st.offlineOnly){
+    target='local'; reasons.push('Offline-only mode is on, so every request stays on the phone.');
+  } else if(!S.online){
+    target='local'; reasons.push('No connection, so the request falls back to the on-device model.');
+  } else if(!st.allowCloud){
+    target='local'; reasons.push('Cloud reasoning is switched off in settings.');
+  } else if(c.level==='low' && p.level!=='low'){
+    target='local'; reasons.push('The task is small enough for the compressed on-device model.'); reasons.push(cap(p.level)+' privacy signal in the wording — no reason to send it anywhere.');
+  } else if(c.level==='high' && p.level==='high'){
+    target='hybrid'; reasons.push('The reasoning is too heavy for the phone alone.'); reasons.push('Strongly private wording, so names and figures are stripped on-device first.'); reasons.push('Only the redacted skeleton crosses the network.');
+  } else if(c.level==='high'){
+    target='cloud'; reasons.push('High complexity and nothing sensitive detected in the request.'); reasons.push('Connection is available, so the cloud model handles it.');
+  } else if(st.preferOnDevice && p.level!=='low'){
+    target='local'; reasons.push('"Keep work on-device" is on and the request carries a privacy signal.');
+  } else {
+    target='hybrid'; reasons.push('Mixed signals — the phone does the preparation and the cloud does the last step.');
+  }
+
+  var ms = target==='local' ? rnd(9,38) : target==='hybrid' ? rnd(720,2100) : rnd(1100,2900);
+  return {
+    target:target, privacy:p, complexity:c, reasons:reasons, ms:ms,
+    label: target==='local' ? 'On-device NPU' : target==='cloud' ? 'Cloud model' : 'Hybrid pipeline'
+  };
+}
+
+function redactions(text){
+  var out = [];
+  var hits = analyzePrivacy(text).hits;
+  for(var i=0;i<hits.length && i<3;i++) out.push(hits[i]);
+  if(/\d/.test(text)) out.push('numeric values');
+  return out;
+}
+
+/* ---------------- local redaction engine (runs in the page, no network) ----
+   Real work: finds identifying spans, swaps them for placeholders, and
+   reverses the swap on the answer so the full version only ever exists here. */
+var RULES = [
+  {tag:'EMAIL',  re:/\b[\w.+-]+@[\w-]+\.[\w.]{2,}\b/g},
+  {tag:'PHONE',  re:/\b(?:\+\d{1,3}[\s-]?)?\d{5}[\s-]?\d{5}\b|\b(?:\+\d{1,3}[\s-]?)?\(?\d{3}\)?[\s-]\d{3}[\s-]\d{4}\b/g},
+  {tag:'AMOUNT', re:/(?:₹|Rs\.?|INR|\$|€|£)\s?\d[\d,]*(?:\.\d+)?(?:\s?(?:lakh|lakhs|crore|crores|k|K|m|M|bn))?/g},
+  {tag:'DATE',   re:/\b\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}\b/g},
+  {tag:'NAME',   re:/\b(?!I\b)[A-Z][a-z]{2,}(?:\s[A-Z][a-z]{2,})+\b/g},
+  {tag:'NUMBER', re:/\b\d{3,}\b/g}
+];
+function redact(text){
+  var map = {}, counts = {}, out = text, spans = [];
+  RULES.forEach(function(r){
+    out = out.replace(r.re, function(m){
+      for(var k in map){ if(map[k]===m) return k; }
+      counts[r.tag] = (counts[r.tag]||0)+1;
+      var token = '[' + r.tag + '_' + counts[r.tag] + ']';
+      map[token] = m;
+      spans.push({token:token, original:m, tag:r.tag});
+      return token;
+    });
+  });
+  return {payload:out, map:map, spans:spans};
+}
+function rehydrate(text, map){
+  var out = text;
+  for(var token in map){
+    out = out.split(token).join(map[token]);
+  }
+  return out;
+}
+
+/* ---------------- inference layer ---------------- */
+var sampleFn = null, sampleState = 'loading';
+if(window.claude && window.claude.use){
+  window.claude.use('sample').then(function(s){
+    sampleFn = s; sampleState = s ? 'ready' : 'absent'; reflectEngine();
+  }).catch(function(){ sampleState='absent'; reflectEngine(); });
+} else { sampleState = 'absent'; }
+
+var PROMPTS_SYS = {
+  local: 'You are the compressed assistant model running on a phone\'s NPU. You have no internet and a small context. Answer in at most 60 words, plainly, with no preamble. If the request truly needs outside knowledge you do not hold, say so in one line and suggest routing it to the cloud.',
+  cloud: 'You are the cloud reasoning model behind a phone assistant. Answer thoroughly but without padding: no preamble, no restating the question, no bullet points unless the content is genuinely a list. Aim for 120-220 words.',
+  hybrid: 'You are the cloud reasoning model behind a privacy-first phone assistant. The request below was redacted on the device before it reached you: every placeholder such as [NAME_1], [AMOUNT_2] or [EMAIL_1] stands for a real value you are not allowed to see. Reason with the placeholders and reproduce them verbatim wherever the real value belongs — the phone substitutes them back. Never guess at what a placeholder contains. Answer in 120-220 words, no preamble.'
+};
+
+function offlineAnswer(t){
+  t = t.toLowerCase();
+  if(t.indexOf('remind')>-1||t.indexOf('timer')>-1||t.indexOf('alarm')>-1) return 'Reminder stored in the device scheduler. This one works without a connection.';
+  if(t.indexOf('note')>-1||t.indexOf('remember')>-1) return 'Saved to the local index. It stays on the phone until you ask for it again.';
+  return 'No connection, and this web build has no model weights on disk, so there is nothing to run locally. On the Android build the compressed model would answer here. Turn the connection back on to get a real answer.';
+}
+
+/* Runs a decision for real. Returns {text, payload, spans, error}. */
+function runModel(text, d, turns, onDelta, signal){
+  if(!S.online){
+    return Promise.resolve({text: offlineAnswer(text), offline:true});
+  }
+  if(!sampleFn){
+    return Promise.resolve({text: 'This page can reach a real model only when it runs inside Claude. Open the published artifact link and allow it to use Claude when asked.', unavailable:true});
+  }
+  var payload = text, map = {}, spans = [];
+  if(d.target === 'hybrid'){
+    var r = redact(text);
+    payload = r.payload; map = r.map; spans = r.spans;
+  }
+  var history = turns.slice(-6).map(function(t){ return {role:t.role, content:t.content}; });
+  var input = [{role:'user', content: PROMPTS_SYS[d.target]}].concat(history, [{role:'user', content: payload}]);
+  var tier = d.target==='local' ? 'quick' : d.target==='cloud' ? 'complex' : 'default';
+
+  return sampleFn(input, {
+    modelTier: tier,
+    cache: false,
+    signal: signal,
+    onText: function(u){ onDelta(d.target==='hybrid' ? rehydrate(u.text, map) : u.text); }
+  }).then(function(res){
+    return {text: d.target==='hybrid' ? rehydrate(res.text, map) : res.text, payload:payload, spans:spans, tier:res.modelTierApplied};
+  }).catch(function(e){
+    var msg = {
+      not_granted:'You declined access to Claude, so this page cannot run the model.',
+      sampling_disabled:'Model access is not available on this account.',
+      rate_limited:'Too many requests in a row. Give it a minute and try again.',
+      session_expired:'Your session expired. Sign in again and retry.',
+      cancelled:'Stopped.',
+      refused:'The model declined this request. Try rewording it.',
+      empty_completion:'The model returned nothing. Try asking for less at once.',
+      invalid_json:'The model\'s reply could not be read.'
+    }[e && e.code] || 'The request failed before it finished. Try again.';
+    return {text: (e && e.text ? e.text + '\n\n' : '') + msg, payload:payload, spans:spans, error:e && e.code};
+  });
+}
+
+function reflectEngine(){
+  var p = $('#enginePill');
+  if(!p) return;
+  var ok = sampleState === 'ready';
+  p.innerHTML = '<span class="dot" style="background:var(--' + (ok?'local':'danger') + ')"></span>' +
+    (ok ? 'Model ready' : sampleState==='loading' ? 'Connecting\u2026' : 'Model unavailable');
+}
+
+/* ---------------- nav ---------------- */
+function navBtn(item, current){
+  var b = document.createElement('button');
+  b.setAttribute('aria-current', String(item.id===current));
+  b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">'+ICON[item.id]+'</svg><span>'+item.label+'</span>';
+  b.addEventListener('click', function(){ go(item.id); });
+  return b;
+}
+var current = 'console';
+function renderNav(){
+  var rail = $('#railNav'), tabs = $('#tabs');
+  rail.innerHTML=''; tabs.innerHTML='';
+  NAV.forEach(function(it){
+    rail.appendChild(navBtn(it,current));
+    tabs.appendChild(navBtn(it,current));
+  });
+}
+function go(id){
+  current=id;
+  NAV.forEach(function(it){ $('#v-'+it.id).classList.toggle('on', it.id===id); });
+  renderNav();
+  window.scrollTo({top:0,behavior:'smooth'});
+  if(id==='router') renderRouter();
+  if(id==='privacy') renderPrivacy();
+}
+
+/* ---------------- lanes ---------------- */
+function setLanes(target){
+  ['local','hybrid','cloud'].forEach(function(k){
+    var lane = $('#lane-'+k);
+    lane.setAttribute('data-on', target===k ? '1':'0');
+    lane.querySelector('.bar i').style.width = target===k ? '100%' : '0%';
+  });
+}
+
+/* ---------------- console ---------------- */
+var PROMPTS = [
+  {t:'Summarise my private meeting notes from this morning', k:'local'},
+  {t:'Research the latest trends in on-device AI and compare the approaches', k:'cloud'},
+  {t:'Compare my confidential salary of ₹850000 in Ravi Kumar\u2019s contract against market data for this role', k:'hybrid'},
+  {t:'Remind me to call the clinic at 4pm', k:'local'}
+];
+function renderChips(){
+  var c = $('#chips'); c.innerHTML='';
+  PROMPTS.forEach(function(p){
+    var b = el('button','chip');
+    b.innerHTML = '<i style="color:var(--'+p.k+')">\u25CF</i>'+esc(p.t);
+    b.addEventListener('click', function(){ $('#input').value = p.t; send(); });
+    c.appendChild(b);
+  });
+}
+
+function stageList(target){
+  if(target==='local') return ['Read the request on-device','Classified privacy and complexity','Ran the compressed model on the NPU','Closed without a network call'];
+  if(target==='cloud') return ['Read the request on-device','Classified privacy and complexity','Opened an encrypted request to the cloud','Received and rendered the answer'];
+  return ['Read the request on-device','Classified privacy and complexity','Stripped sensitive spans locally','Sent the redacted skeleton to the cloud','Reassembled the answer on-device'];
+}
+
+var turns = [];
+var activeCtl = null;
+
+function send(){
+  if(S.busy) return;
+  var text = $('#input').value.trim();
+  if(!text) return;
+  $('#input').value=''; $('#input').style.height='auto';
+  $('#hero').style.display='none';
+  S.busy = true; $('#sendBtn').disabled = true;
+
+  var thread = $('#thread');
+  var u = el('div','msg user', text);
+  thread.appendChild(u);
+
+  var d = routeTask(text);
+  setLanes(d.target);
+
+  var card = el('div','card '+d.target);
+  var hd = el('div','card-hd');
+  hd.innerHTML = '<span class="tag '+d.target+'">'+d.label+'</span>' +
+    '<span class="hint" style="font-size:12.5px;color:var(--muted)">deciding\u2026</span>' +
+    '<span class="meta mono">'+clock()+'</span>';
+  card.appendChild(hd);
+  var bd = el('div','card-bd');
+  var steps = el('ul','steps');
+  var names = stageList(d.target);
+  names.forEach(function(n){
+    var li = el('li','pend');
+    li.innerHTML = '<span class="tick">\u25CB</span><span>'+esc(n)+'</span>';
+    steps.appendChild(li);
+  });
+  bd.appendChild(steps);
+  card.appendChild(bd);
+  thread.appendChild(card);
+  card.scrollIntoView({behavior:'smooth', block:'end'});
+
+  var out = el('p');
+  out.style.cssText = 'font-size:14.5px;white-space:pre-wrap;margin-top:4px';
+  out.textContent = '';
+  bd.appendChild(out);
+
+  turns.push({role:'user', content:text});
+  activeCtl = new AbortController();
+  $('#sendBtn').textContent = 'Stop';
+  $('#sendBtn').disabled = false;
+
+  var t0 = Date.now();
+  var i = 0, streaming = false;
+  var per = d.target==='local' ? 170 : 300;
+  var timer = setInterval(function(){
+    if(i >= names.length - 1 && !streaming) return;   /* hold the last stage until text arrives */
+    var li = steps.children[i];
+    if(li){ li.classList.remove('pend'); li.querySelector('.tick').textContent='\u2713'; }
+    i++;
+    if(i >= names.length) clearInterval(timer);
+  }, per);
+
+  var request = runModel(text, d, turns.slice(0,-1), function(partial){
+    streaming = true;
+    if(out.textContent === '') hd.children[1].textContent = 'writing\u2026';
+    out.textContent = partial;
+  }, activeCtl.signal);
+
+  request.then(function(res){
+    streaming = true;
+    clearInterval(timer);
+    for(var k=0;k<names.length;k++){
+      var li = steps.children[k];
+      li.classList.remove('pend'); li.querySelector('.tick').textContent='\u2713';
+    }
+    var ms = Date.now() - t0;
+    var spans = res.spans || [];
+    out.textContent = res.text;
+    if(!res.error) turns.push({role:'assistant', content:res.text});
+
+    hd.children[1].textContent =
+      res.offline || res.unavailable ? 'no model reached' :
+      d.target==='local' ? 'stayed on this device' :
+      d.target==='cloud' ? 'sent to the cloud' :
+      (spans.length ? spans.length + ' span' + (spans.length>1?'s':'') + ' redacted first' : 'nothing to redact');
+
+    var fx = el('div','factors');
+    fx.innerHTML =
+      '<span class="fx">privacy <b>'+d.privacy.level+'</b></span>'+
+      '<span class="fx">complexity <b>'+d.complexity.level+'</b></span>'+
+      '<span class="fx">round trip <b class="mono">'+ms+' ms</b></span>'+
+      (res.tier ? '<span class="fx">tier <b>'+res.tier+'</b></span>' : '');
+    bd.appendChild(fx);
+
+    if(d.target==='hybrid' && res.payload){
+      var pd = el('details','why');
+      pd.appendChild(el('summary', null, 'See exactly what left the device'));
+      var box = el('div');
+      box.style.cssText='margin-top:9px';
+      var pre = el('pre','mono');
+      pre.style.cssText='white-space:pre-wrap;font-size:12.5px;background:var(--surface-2);border:1px solid var(--line-soft);border-radius:8px;padding:10px;margin:0';
+      pre.textContent = res.payload;
+      box.appendChild(pre);
+      if(spans.length){
+        var kept = el('div');
+        kept.style.cssText='margin-top:9px;font-size:12.5px;color:var(--muted)';
+        kept.innerHTML = 'Held back on this device: ' + spans.map(function(s){
+          return '<span class="fx">'+esc(s.token)+'</span>';
+        }).join(' ');
+        box.appendChild(kept);
+      }
+      pd.appendChild(box);
+      bd.appendChild(pd);
+    }
+
+    var det = el('details','why');
+    det.appendChild(el('summary', null, 'Why this path?'));
+    var ul = el('ul');
+    d.reasons.forEach(function(r){ ul.appendChild(el('li',null,r)); });
+    det.appendChild(ul);
+    bd.appendChild(det);
+
+    d.ms = ms;
+    log(text, d, spans.length);
+    S.busy = false; activeCtl = null;
+    $('#sendBtn').textContent = 'Route it'; $('#sendBtn').disabled = false;
+    card.scrollIntoView({behavior:'smooth', block:'end'});
+  });
+}
+
+function log(text, d, redCount){
+  S.activity.unshift({time:clock(), text:text, target:d.target, ms:d.ms, red:redCount});
+  if(d.target==='local') S.counts.local++; else S.counts.cloud++;
+  S.counts.redacted += redCount;
+  if(d.target==='local') S.latencies.push(d.ms);
+  if(S.latencies.length>40) S.latencies.shift();
+  updatePills();
+  renderPrivacy();
+  drawSpark();
+}
+function updatePills(){
+  var total = S.counts.local + S.counts.cloud;
+  var pct = total ? Math.round(S.counts.local/total*100) : 0;
+  $('#localPill').textContent = pct + '% on-device';
+}
+
+/* ---------------- router inspector ---------------- */
+function bar(label, level){
+  var pct = level==='high'?100:level==='medium'?60:25;
+  return '<span class="fx">'+label+' <b>'+level+'</b></span>';
+}
+function renderRouter(){
+  var text = $('#rInput').value;
+  var d = routeTask(text);
+  var f = $('#rFactors');
+  f.innerHTML =
+    bar('privacy', d.privacy.level) +
+    bar('complexity', d.complexity.level) +
+    '<span class="fx">words <b class="mono">'+d.complexity.words+'</b></span>' +
+    '<span class="fx">network <b>'+(S.online?'available':'offline')+'</b></span>' +
+    (d.privacy.hits.length? '<span class="fx">triggers <b>'+esc(d.privacy.hits.slice(0,3).join(', '))+'</b></span>' : '');
+  drawViz(d);
+  var w = $('#rWhy');
+  w.innerHTML = '<div class="banner" style="margin-top:14px"><b style="color:var(--'+d.target+')">'+d.label+'</b> \u00b7 estimated '+d.ms+' ms<ul style="margin:9px 0 0;padding-left:17px;display:flex;flex-direction:column;gap:4px">'+
+    d.reasons.map(function(r){return '<li>'+esc(r)+'</li>';}).join('')+'</ul></div>';
+}
+function drawViz(d){
+  var t = d.target;
+  var accent = 'var(--'+t+')';
+  var pathA = t!=='cloud';            /* device -> router always; device does work unless pure cloud */
+  var toCloud = t==='cloud' || t==='hybrid';
+  var svg = $('#viz');
+  function node(x,y,w,h,on,label,sub,color){
+    return '<rect class="node'+(on?' on':'')+'" x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="12"'+(on?' stroke="'+color+'"':'')+'/>'+
+           '<text class="nlabel" x="'+(x+w/2)+'" y="'+(y+h/2-2)+'" text-anchor="middle">'+label+'</text>'+
+           '<text x="'+(x+w/2)+'" y="'+(y+h/2+15)+'" text-anchor="middle">'+sub+'</text>';
+  }
+  var edge1 = '<path class="edge live" d="M150 105 H245" stroke="'+accent+'"/>';
+  var edge2 = toCloud
+    ? '<path class="edge live" d="M395 105 H490" stroke="'+accent+'"/>'
+    : '<path class="edge" d="M395 105 H490"/>';
+  var loop = t!=='cloud'
+    ? '<path class="edge live" d="M320 140 V175 H95 V130" stroke="'+accent+'"/><text x="207" y="192" text-anchor="middle" fill="'+accent+'">answer assembled on-device</text>'
+    : '<path class="edge" d="M320 140 V175 H95 V130"/><text x="207" y="192" text-anchor="middle">answer returned from cloud</text>';
+
+  svg.innerHTML =
+    edge1 + edge2 + loop +
+    node(30,70,120,70, true, 'Your phone', 'request starts here', accent) +
+    node(245,70,150,70, true, 'Router', d.privacy.level+' privacy / '+d.complexity.level+' load', accent) +
+    node(490,70,120,70, toCloud, 'Cloud model', toCloud?'receives '+(t==='hybrid'?'redacted text':'full request'):'not contacted', accent) +
+    '<text x="197" y="96" text-anchor="middle" fill="'+accent+'">classify</text>' +
+    (toCloud? '<text x="442" y="96" text-anchor="middle" fill="'+accent+'">'+(t==='hybrid'?'redacted':'encrypted')+'</text>' : '<text x="442" y="96" text-anchor="middle">no network</text>');
+}
+
+/* ---------------- demo ---------------- */
+var SCENARIOS = [
+  {id:'local', name:'Private + simple', text:'Organise my personal meeting notes from this morning',
+   note:'Nothing complex and clearly personal — the phone keeps it.'},
+  {id:'cloud', name:'Public + complex', text:'Research the latest trends in AI accelerators and compare the leading approaches',
+   note:'Heavy reasoning with nothing sensitive in it — the cloud is the right tool.'},
+  {id:'hybrid', name:'Private + complex', text:'Compare my confidential salary of ₹850000 in Ravi Kumar\u2019s contract against market data for this role',
+   note:'Both demanding and sensitive — this is the case the hybrid path exists for.'}
+];
+var activeScn = 'hybrid';
+function renderScnButtons(){
+  var c = $('#scnBtns'); c.innerHTML='';
+  SCENARIOS.forEach(function(s){
+    var b = el('button', null, s.name);
+    b.setAttribute('aria-pressed', String(s.id===activeScn));
+    b.addEventListener('click', function(){ activeScn=s.id; renderScnButtons(); renderDemo(); });
+    c.appendChild(b);
+  });
+}
+var demoTimer = null;
+function renderDemo(){
+  if(demoTimer) clearInterval(demoTimer);
+  var s = SCENARIOS.filter(function(x){return x.id===activeScn;})[0];
+  var d = routeTask(s.text);
+  var p = $('#demoPanel');
+  p.innerHTML =
+    '<div style="font-size:15px;font-weight:500">\u201C'+esc(s.text)+'\u201D</div>'+
+    '<div class="factors" style="margin-top:10px">'+
+      '<span class="fx">privacy <b>'+d.privacy.level+'</b></span>'+
+      '<span class="fx">complexity <b>'+d.complexity.level+'</b></span>'+
+      '<span class="fx">decision <b style="color:var(--'+d.target+')">'+d.label+'</b></span>'+
+    '</div>'+
+    '<ul class="steps" id="demoSteps" style="margin-top:16px;font-size:13.5px"></ul>'+
+    '<div class="banner" id="demoNote" style="margin-top:6px;display:none">'+esc(s.note)+'</div>'+
+    '<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button class="chip" id="demoRun">Run this for real</button>'+
+      '<button class="chip" id="demoReplay">Play again</button>'+
+    '</div>';
+
+  var ul = $('#demoSteps');
+  var names = stageList(d.target);
+  names.forEach(function(n){
+    var li = el('li','pend');
+    li.innerHTML = '<span class="tick">\u25CB</span><span>'+esc(n)+'</span>';
+    ul.appendChild(li);
+  });
+  $('#demoReplay').addEventListener('click', renderDemo);
+  $('#demoRun').addEventListener('click', function(){
+    $('#input').value = s.text;
+    go('console');
+    setTimeout(send, 260);
+  });
+
+  var i=0;
+  demoTimer = setInterval(function(){
+    var li = ul.children[i];
+    if(li){ li.classList.remove('pend'); li.querySelector('.tick').textContent='\u2713'; }
+    i++;
+    if(i>=names.length){ clearInterval(demoTimer); demoTimer=null; $('#demoNote').style.display='block'; }
+  }, 520);
+}
+
+/* ---------------- privacy ---------------- */
+function renderPrivacy(){
+  $('#pLocal').textContent = S.counts.local;
+  $('#pCloud').textContent = S.counts.cloud;
+  $('#pRedact').textContent = S.counts.redacted;
+  var log = $('#pLog');
+  if(!S.activity.length){
+    log.innerHTML = '<div class="empty">Nothing routed yet. Send a request from the console and it will appear here.</div>';
+    return;
+  }
+  log.innerHTML='';
+  S.activity.slice(0,12).forEach(function(a){
+    var r = el('div','row');
+    r.innerHTML = '<span class="t mono">'+a.time+'</span>'+
+      '<span class="tag '+a.target+'">'+(a.target==='local'?'stayed local':a.target==='cloud'?'sent to cloud':'redacted \u2192 cloud')+'</span>'+
+      '<span class="grow">'+esc(a.text)+'</span>'+
+      '<span class="mono" style="color:var(--muted);font-size:12px">'+a.ms+' ms</span>';
+    log.appendChild(r);
+  });
+}
+
+/* ---------------- device ---------------- */
+function drift(v, lo, hi){
+  var n = v + (Math.random()-0.5)*9;
+  return Math.max(lo, Math.min(hi, Math.round(n)));
+}
+function tickMetrics(){
+  S.metrics.npu = drift(S.metrics.npu, 12, S.busy?96:70);
+  S.metrics.cpu = drift(S.metrics.cpu, 8, 65);
+  S.metrics.mem = drift(S.metrics.mem, 35, 78);
+  $('#npuPill').textContent = S.metrics.npu+'%';
+  $('#mNpu').textContent = S.metrics.npu+'%';
+  $('#mCpu').textContent = S.metrics.cpu+'%';
+  $('#mMem').textContent = S.metrics.mem+'%';
+  $('#bNpu').style.width = S.metrics.npu+'%';
+  $('#bCpu').style.width = S.metrics.cpu+'%';
+  $('#bMem').style.width = S.metrics.mem+'%';
+}
+function drawSpark(){
+  var svg = $('#spark');
+  var data = S.latencies.length ? S.latencies : [];
+  if(!data.length){ svg.innerHTML = '<text x="6" y="34" style="font-family:IBM Plex Mono;font-size:9px;fill:var(--muted)">no on-device runs yet</text>'; return; }
+  var max = Math.max.apply(null, data), min = Math.min.apply(null, data);
+  var span = Math.max(1, max-min);
+  var step = data.length>1 ? 400/(data.length-1) : 400;
+  var pts = data.map(function(v,i){
+    var x = i*step, y = 54 - ((v-min)/span)*44;
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  svg.innerHTML =
+    '<polyline points="'+pts+'" fill="none" stroke="var(--local)" stroke-width="1.8" vector-effect="non-scaling-stroke" stroke-linejoin="round"/>'+
+    '<text x="2" y="10" style="font-family:IBM Plex Mono;font-size:9px;fill:var(--muted)">'+max+'ms</text>'+
+    '<text x="2" y="58" style="font-family:IBM Plex Mono;font-size:9px;fill:var(--muted)">'+min+'ms</text>';
+}
+
+/* ---------------- settings ---------------- */
+var TOGGLES = [
+  {k:'preferOnDevice', lb:'Keep work on-device when possible', ds:'Borderline requests stay on the phone even when the cloud would be a little faster.'},
+  {k:'allowCloud', lb:'Allow cloud reasoning', ds:'Turn this off and every request is answered by the compressed local model.'},
+  {k:'confirmCloud', lb:'Ask before anything leaves the device', ds:'Shows a confirmation the first time a request would cross the network.'},
+  {k:'offlineOnly', lb:'Offline-only mode', ds:'A hard lock. Nothing is sent anywhere, regardless of the other settings.'}
+];
+function renderToggles(){
+  var c = $('#togs'); c.innerHTML='';
+  TOGGLES.forEach(function(t){
+    var row = el('div','tog');
+    var left = el('div');
+    left.appendChild(el('div','lb',t.lb));
+    left.appendChild(el('div','ds',t.ds));
+    var b = el('button','sw');
+    b.setAttribute('aria-pressed', String(!!S.settings[t.k]));
+    b.setAttribute('aria-label', t.lb);
+    b.addEventListener('click', function(){
+      S.settings[t.k] = !S.settings[t.k];
+      if(t.k==='offlineOnly' && S.settings[t.k]) S.settings.allowCloud = false;
+      persist(); renderToggles(); renderRouter();
+    });
+    row.appendChild(left); row.appendChild(b);
+    c.appendChild(row);
+  });
+}
+
+/* ---------------- wiring ---------------- */
+$('#sendBtn').addEventListener('click', function(){
+  if(S.busy && activeCtl){ activeCtl.abort(); return; }
+  send();
+});
+$('#input').addEventListener('keydown', function(e){
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); send(); }
+});
+$('#input').addEventListener('input', function(){
+  this.style.height='auto'; this.style.height = Math.min(150, this.scrollHeight)+'px';
+});
+$('#rInput').addEventListener('input', renderRouter);
+
+$('#netBtn').addEventListener('click', function(){
+  S.online = !S.online;
+  $('#netDot').classList.toggle('off', !S.online);
+  $('#netTxt').textContent = S.online ? 'Online' : 'Offline';
+  renderRouter();
+});
+$('#themeBtn').addEventListener('click', function(){
+  var cur = document.documentElement.getAttribute('data-theme');
+  var next = cur==='dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  try{ localStorage.setItem('nexa.theme', next); }catch(e){}
+  $('#themeBtn').textContent = next==='dark' ? 'Light mode' : 'Dark mode';
+  drawSpark(); renderRouter();
+});
+$('#themeBtn').textContent = document.documentElement.getAttribute('data-theme')==='dark' ? 'Light mode' : 'Dark mode';
+
+renderNav();
+renderChips();
+renderToggles();
+renderScnButtons();
+renderDemo();
+renderRouter();
+renderPrivacy();
+tickMetrics();
+drawSpark();
+setInterval(tickMetrics, 2200);
+})();
+</script>
+</body>
+</html>
